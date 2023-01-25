@@ -1,0 +1,4 @@
+pytelegrambotapi
+mysql-connector
+pyyaml
+numpy

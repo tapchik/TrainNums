@@ -1,89 +1,63 @@
-import numpy
-import mysql.connector
+import sqlite3
+from User import User
 
 DEBUG = True
 
-class connector(object):
-    db = None
-    cursor = None
-    def __init__(self):
-        self.db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root",
-        database = "trainnums")
+def ExecuteQuery(database: sqlite3.Connection, query: str) -> list | None:
+    cursor = database.cursor()
+    cursor.execute(query)
+    result = cursor.fetchall()
+    return result
 
-        print("You are connected to...")
-        print(self.db)
+def UserExists(database: sqlite3.Connection, user_id: str) -> bool:
+    query = f"select userid from user where userid=\"{user_id}\""
+    query_result = ExecuteQuery(database, query)
+    if len(query_result) == 0:
+        return False
+    else:
+        return True
 
-        # preparing a cursor object
-        self.cursor = self.db.cursor()
+def InitiateNewUser(database: sqlite3.Connection, user_id: str) -> None:
+    query = f"insert into user (userid) values (\"{user_id}\")"
+    ExecuteQuery(database, query)
+    database.commit()
 
-    def insert(self):
-        # TESTING INSERTING
-        sql = "INSERT INTO table1 (user_id) VALUES (02)"
-        #val = tuple("02")
-        self.cursor.execute(sql)
-        self.db.commit()
+def LoadInfoAboutUser(database: sqlite3.Connection, user_id: str) -> User:
 
-    def fetch_example_1(self):
-        # TESTING SELECTING
-        query = "SELECT * FROM table1"
-        self.cursor.execute(query)
+    # create new entry in database it case we don't have a record on user
+    if UserExists(database, user_id) == False:
+        InitiateNewUser(database, user_id)
+    
+    query = f"select * from user where userid = \"{user_id}\""
+    query_result = ExecuteQuery(database, query)
+    row = query_result[0]
 
-        myresult = self.cursor.fetchall()
+    user = User(row)
+    return user
 
-        for x in myresult:
-            print(x)
+def UpdateInfoAboutUser(database: sqlite3.Connection, user: User) -> None:
+    query = f"update user set " + \
+            f"userid = \'{user.id}\', " + \
+            f"state = {user.state}, " + \
+            f"problem = \'{user.problem}\', " + \
+            f"answer = \'{user.answer}\', " + \
+            f"addition = \'{int(user.addition)}\', " + \
+            f"subtraction = \'{int(user.subtraction)}\', " + \
+            f"multiplication = \'{int(user.multiplication)}\', " + \
+            f"division = \'{int(user.division)}\', " + \
+            f"max_sum = \'{user.max_sum}\', " + \
+            f"max_factor = \'{user.max_factor}\', " + \
+            f"correct = {user.correct}, " + \
+            f"incorrect = {user.incorrect}, " + \
+            f"skipped = {user.skipped} " + \
+            f"where userid = {user.id}"
+    ExecuteQuery(database, query)
+    database.commit()
 
-    def fetchProblem(self, user_id):
-        query = f"select problem from table1 where user_id = {user_id}"
-        self.cursor.execute(query)
-        myresult = self.cursor.fetchall()
-        try:
-            problem = myresult[0][0]
-        except Exception:
-            problem = None
-        return problem
-
-    def fetchAnswer(self, user_id):
-        query = f"select answer from table1 where user_id = {user_id}"
-        self.cursor.execute(query)
-        myresult = self.cursor.fetchall()
-        try:
-            answer = myresult[0][0]
-        except Exception:
-            answer = None
-        return answer
-
-    def addNewUser(self, user_id):
-        sql = f"insert into table1 (user_id, state) values ({user_id, 0})"
-        self.cursor.execute(sql)
-        self.db.commit()
-
-    def userExist(self, user_id):
-        query = f"select user_id from table1 where user_id = {user_id}"
-        self.cursor.execute(query)
-        myresult = self.cursor.fetchall()
-        try:
-            temp = myresult[0][0]
-            return True
-        except Exception:
-            return False
-
-    def updateUser(self, user):
-        sql = f"update table1 set state = {user.state}, problem = {user.problem}, answer = {user.answer} where user_id = {user.user_id}"
-        try:
-            self.cursor.execute(sql)
-            self.db.commit()
-        except Exception:
-            raise
-
-    def close(self):
-        self.db.close()
-
-if DEBUG == True:
-    c = connector()
-    c.fetch_example_1()
-    print(c.fetchProblem(1))
-    print(c.fetchAnswer(1))
+# TEST 1
+#database = sqlite3.connect("database.db", check_same_thread=False)
+#d = LoadInfoAboutUser(database, "217802917")
+#d.problem = "1+1"
+#d.answer = "2"
+#UpdateInfoAboutUser(database, d)
+#pass
