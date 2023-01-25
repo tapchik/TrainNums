@@ -1,0 +1,7 @@
+/model.mwb
+/model.mwb.bak
+/Pipfile
+/Pipfile.lock
+/__pycache__
+assets.yml
+.gitignore
