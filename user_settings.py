@@ -6,5 +6,5 @@ class user_settings():
     subtraction: bool
     multiplication: bool
     division: bool
-    max_sum: bool
-    max_factor: bool
+    max_sum: int
+    max_factor: int
