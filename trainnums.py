@@ -1,7 +1,9 @@
 from random import choice, randint
-from user_settings import user_settings
+from User import Task
+from User import Settings
+import custom_exceptions
 
-def GenerateNewProblem(settings: user_settings) -> tuple[str]:
+def GenerateNewProblem(settings: Settings) -> Task:
     operation = ChooseOperation(settings)
     match operation:
         case '+':
@@ -21,11 +23,12 @@ def GenerateNewProblem(settings: user_settings) -> tuple[str]:
             answer = randint(1, settings.max_factor)
             left = answer * right
         case _:
-            return None, None
+            raise custom_exceptions.UnableToGenerateProblemException
     problem = f"{left} {operation} {right}"
-    return problem, answer
+    task = Task(problem, answer)
+    return task
 
-def ChooseOperation(settings: user_settings) -> str:
+def ChooseOperation(settings: Settings) -> str:
     choices = []
     if settings.addition == True: 
         choices += ['+']
