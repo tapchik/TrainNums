@@ -10,9 +10,7 @@ from custom_exceptions import *
 def ReadAssetsFile(assets_file: str) -> dict[str, str]:
     try: 
         read_assets = open(assets_file)
-        #with open(assets_file) as read_assets:
         data_from_assets_file = yaml.safe_load(read_assets)
-        #telegramBotToken: str = read_data["TelegramBotToken"]
     except FileNotFoundError:
         raise AssetsFileNotFound("Error. Specified assets file not found. ")
     finally:
