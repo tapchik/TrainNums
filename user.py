@@ -13,7 +13,9 @@ class Settings():
 
 @dataclass
 class Stats():
-    correct: int; incorrect: int; skipped: int
+    correct: int
+    incorrect: int
+    skipped: int
 
 @dataclass
 class User():
