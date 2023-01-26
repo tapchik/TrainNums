@@ -2,7 +2,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Task():
-    problem: str; answer: str
+    problem: str | None
+    answer: str | None
 
 @dataclass
 class Settings():

@@ -16,8 +16,7 @@ def ReadAssetsFile(assets_file: str) -> dict[str, str]:
         data_from_assets_file = yaml.safe_load(read_assets)
     except FileNotFoundError:
         raise AssetsFileNotFound("Error. Specified assets file not found. ")
-    finally:
-        read_assets.close()
+    read_assets.close()
     return data_from_assets_file
 
 assets = ReadAssetsFile("assets.yml")
@@ -43,7 +42,7 @@ def start(message):
     bot.send_message(message.chat.id, mess, parse_mode='html') # 'html' or 'Markdown'
 
 @bot.message_handler(commands=['skip'])
-def start(message):
+def skip(message):
     user: User = connector.LoadInfoAboutUser(database, message.chat.id)
     user.stats.skipped += 1
     try: 
@@ -70,7 +69,7 @@ def show_settings(message, text=replies.PresentSettings()):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call: types.CallbackQuery):
-    user = connector.LoadInfoAboutUser(database, call.message.chat.id)
+    user = connector.LoadInfoAboutUser(database, str(call.message.chat.id))
     answer = None
     match call.data:
         case "addition_switch":
@@ -149,7 +148,7 @@ def get_user_text(message):
     finally:
         connector.UpdateInfoAboutUser(database, user)
 
-def _MarkupForSettings(settings: Settings) -> types.ReplyKeyboardMarkup: 
+def _MarkupForSettings(settings: Settings) -> types.InlineKeyboardMarkup: 
     row1 = [types.InlineKeyboardButton(f"Addition: {settings.addition}", callback_data="addition_switch"),
             types.InlineKeyboardButton(f"Multiplication: {settings.multiplication}", callback_data="multiplication_switch")]
     row2 = [types.InlineKeyboardButton(f"Subtraction: {settings.subtraction}", callback_data="subtraction_switch"),

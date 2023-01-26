@@ -25,10 +25,10 @@ def GenerateNewProblem(settings: Settings) -> Task:
         case _:
             raise custom_exceptions.UnableToGenerateProblemException
     problem = f"{left} {operation} {right}"
-    task = Task(problem, answer)
+    task = Task(problem, str(answer))
     return task
 
-def ChooseOperation(settings: Settings) -> str:
+def ChooseOperation(settings: Settings) -> str | None:
     choices = []
     if settings.addition == True: 
         choices += ['+']
