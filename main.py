@@ -24,7 +24,7 @@ assets = ReadAssetsFile("assets.yml")
 telegramBotToken = assets["TelegramBotToken"]
 bot = telebot.TeleBot(telegramBotToken)
 
-database = sqlite3.connect("database.db", check_same_thread=False)
+database = sqlite3.connect("trainnums.db", check_same_thread=False)
 
 @bot.inline_handler(lambda query: query.query == 'стих')
 def query_text(inline_query):
@@ -47,6 +47,7 @@ def start(message):
     user.skipped += 1
     user_settings = user.extract_settings()
     user.problem, user.answer = trainnums.GenerateNewProblem(user_settings)
+    connector.UpdateInfoAboutUser(database, user)
     reply = f"Ok\nHere is another one {user.problem}"
     bot.send_message(message.chat.id, reply)
 

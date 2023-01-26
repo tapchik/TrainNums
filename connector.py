@@ -1,7 +1,6 @@
 import sqlite3
 from User import User
-
-DEBUG = True
+import trainnums
 
 def ExecuteQuery(database: sqlite3.Connection, query: str) -> list | None:
     cursor = database.cursor()
@@ -20,6 +19,11 @@ def UserExists(database: sqlite3.Connection, user_id: str) -> bool:
 def InitiateNewUser(database: sqlite3.Connection, user_id: str) -> None:
     query = f"insert into user (userid) values (\"{user_id}\")"
     ExecuteQuery(database, query)
+    database.commit()
+    user = LoadInfoAboutUser(database, user_id)
+    settings = user.extract_settings()
+    user.problem, user.answer = trainnums.GenerateNewProblem(settings)
+    UpdateInfoAboutUser(database, user)
     database.commit()
 
 def LoadInfoAboutUser(database: sqlite3.Connection, user_id: str) -> User:
@@ -53,11 +57,3 @@ def UpdateInfoAboutUser(database: sqlite3.Connection, user: User) -> None:
             f"where userid = {user.id}"
     ExecuteQuery(database, query)
     database.commit()
-
-# TEST 1
-#database = sqlite3.connect("database.db", check_same_thread=False)
-#d = LoadInfoAboutUser(database, "217802917")
-#d.problem = "1+1"
-#d.answer = "2"
-#UpdateInfoAboutUser(database, d)
-#pass
