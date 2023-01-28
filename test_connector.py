@@ -4,6 +4,7 @@ import trainnums
 import User
 import connector
 import sqlite3
+import utils
 
 class test_connector(unittest.TestCase):
 
@@ -13,8 +14,12 @@ class test_connector(unittest.TestCase):
         """
         Rollback database for testing to a starting point with no entries
         """
-        self.database = sqlite3.connect("testing.db", check_same_thread=False)
-        with open('RollbackDatabase.sql', 'r') as sql_file:
+        assets = utils.ReadAssetsFile('assets.yml')
+        database_file: str = assets['DatabaseTesting']
+        rollback_script_file: str = assets['RollbackScript']
+
+        self.database = sqlite3.connect(database_file, check_same_thread=False)
+        with open(rollback_script_file, 'r') as sql_file:
             sql_script = sql_file.read()
         cursor = self.database.cursor()
         cursor.executescript(sql_script)

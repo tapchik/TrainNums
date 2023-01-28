@@ -4,9 +4,6 @@ class LessThanZeroException(Exception):
 class ValueTooBigException(Exception):
     pass
 
-class AssetsFileNotFound(Exception):
-    pass
-
 class UnableToGenerateProblemException(Exception):
     pass
 

@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 import sqlite3
-import yaml
+import utils
 from User import User
 from User import Task
 from User import Settings
@@ -10,21 +10,12 @@ import replies
 import trainnums
 from custom_exceptions import *
 
-def ReadAssetsFile(assets_file: str) -> dict[str, str]:
-    try: 
-        read_assets = open(assets_file)
-        data_from_assets_file = yaml.safe_load(read_assets)
-    except FileNotFoundError:
-        raise AssetsFileNotFound("Error. Specified assets file not found. ")
-    read_assets.close()
-    return data_from_assets_file
+assets = utils.ReadAssetsFile("assets.yml")
+telegramBotToken: str = assets['TelegramBotToken']
+database_file: str = assets['DatabaseMaster']
 
-assets = ReadAssetsFile("assets.yml")
-
-telegramBotToken = assets["TelegramBotToken"]
 bot = telebot.TeleBot(telegramBotToken)
-
-database = sqlite3.connect("trainnums.db", check_same_thread=False)
+database = sqlite3.connect(database_file, check_same_thread=False)
 
 @bot.inline_handler(lambda query: query.query == 'стих')
 def query_text(inline_query):
