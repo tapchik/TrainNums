@@ -5,3 +5,5 @@
 /__pycache__
 assets.yml
 .gitignore
+/.vscode
+/trainnums.db

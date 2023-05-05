@@ -10,7 +10,7 @@ import replies
 import trainnums
 from custom_exceptions import *
 
-assets = utils.ReadAssetsFile("assets.yml")
+assets = utils.ReadAssetsFile('assets.yml')
 telegramBotToken: str = assets['TelegramBotToken']
 database_file: str = assets['DatabaseMaster']
 
