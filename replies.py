@@ -1,18 +1,18 @@
-import User
+import models
 
-def PresentProblemAfterSkip(task: User.Task) -> str:
+def PresentProblemAfterSkip(task: models.Task) -> str:
     message = f"Ok\nSolve this one instead: {task.problem}"
     return message
 
-def PresentProblemAfterSuccess(task: User.Task) -> str:
+def PresentProblemAfterSuccess(task: models.Task) -> str:
     message = f"Correct!\nHere is another one: {task.problem}"
     return message
 
-def PresentSameProblemAfterFailure(task: User.Task) -> str:
+def PresentSameProblemAfterFailure(task: models.Task) -> str:
     message = f"Incorrect!\nTry some more: {task.problem}"
     return message
 
-def PresentSameProblemAfterSettings(task: User.Task) -> str:
+def PresentSameProblemAfterSettings(task: models.Task) -> str:
     message = f"Ok, settings saved, but solve previous problem first: {task.problem}"
     return message
 
@@ -20,7 +20,7 @@ def InformAboutSuccess() -> str:
     message = "Well done, that is correct!"
     return message
 
-def PresentStats(stats: User.Stats) -> str:
+def PresentStats(stats: models.Stats) -> str:
     message = (f"Here are your stats:\n" + \
                f"Correct: {stats.correct}\n" + \
                f"Incorrect: {stats.incorrect}\n" + \

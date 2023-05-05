@@ -1,6 +1,5 @@
 from random import choice, randint
-from User import Task
-from User import Settings
+from models import Task, Settings
 import custom_exceptions
 
 def GenerateNewProblem(settings: Settings) -> Task:
@@ -23,7 +22,8 @@ def GenerateNewProblem(settings: Settings) -> Task:
             answer = randint(1, settings.max_factor)
             left = answer * right
         case _:
-            raise custom_exceptions.UnableToGenerateProblemException
+            task = Task(None, None)
+            return task
     problem = f"{left} {operation} {right}"
     task = Task(problem, str(answer))
     return task

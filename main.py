@@ -2,20 +2,20 @@ import telebot
 from telebot import types
 import sqlite3
 import utils
-from User import User
-from User import Task
-from User import Settings
+from models import Task, Settings
 import connector
+from connector import Connector
 import replies
 import trainnums
 from custom_exceptions import *
 
+# init
 assets = utils.ReadAssetsFile('assets.yml')
-telegramBotToken: str = assets['TelegramBotToken']
-database_file: str = assets['DatabaseMaster']
+bot = telebot.TeleBot(assets['TelegramBotToken'])
+database = sqlite3.connect(assets['DatabaseMaster'], check_same_thread=False)
+del(assets)
 
-bot = telebot.TeleBot(telegramBotToken)
-database = sqlite3.connect(database_file, check_same_thread=False)
+Connector = Connector(database)
 
 @bot.inline_handler(lambda query: query.query == 'стих')
 def query_text(inline_query):
@@ -27,68 +27,78 @@ def query_text(inline_query):
        print(e)
 
 @bot.message_handler(commands=['start'])
-def start(message):
-    user: User = connector.LoadInfoAboutUser(database, message.chat.id)
-    mess = f"Solve this problem: {user.task.problem}"
-    bot.send_message(message.chat.id, mess, parse_mode='html') # 'html' or 'Markdown'
+def handle_start(message):
+    task = Connector.GetTask(message.chat.id)
+    if task.problem == None: 
+        task = Connector.GenerateNextTask(message.chat.id)
+    if task.problem == None:
+        InformUnableToGenerate(message)
+        return
+    reply = f"Solve this problem: {task.problem}"
+    bot.send_message(message.chat.id, reply, parse_mode='html') # 'html' or 'Markdown'
 
 @bot.message_handler(commands=['skip'])
 def skip(message):
-    user: User = connector.LoadInfoAboutUser(database, message.chat.id)
-    user.stats.skipped += 1
+    task = Connector.GetTask(message.chat.id)
+    settings = Connector.GetSettings(message.chat.id)
+    stats = Connector.GetStats(message.chat.id)
+    stats.skipped += 1
     try: 
-        user.task = trainnums.GenerateNewProblem(user.settings)
-        reply = replies.PresentProblemAfterSkip(user.task)
+        task = trainnums.GenerateNewProblem(settings)
+        reply = replies.PresentProblemAfterSkip(task)
     except UnableToGenerateProblemException:
         reply = replies.AskToTurnOnAnOperation()
         show_settings(message, text=reply)
         return
-    connector.UpdateInfoAboutUser(database, user)
+    Connector.Save(message.chat.id, task)
+    Connector.Save(message.chat.id, settings)
+    Connector.Save(message.chat.id, stats)
     bot.send_message(message.chat.id, reply)
 
 @bot.message_handler(commands=['stats'])
 def show_stats(message):
-    user: User = connector.LoadInfoAboutUser(database, message.chat.id)
-    reply = replies.PresentStats(user.stats)
+    stats = Connector.GetStats(message.chat.id)
+    reply = replies.PresentStats(stats)
     bot.send_message(message.chat.id, reply)
 
 @bot.message_handler(commands=['settings'])
 def show_settings(message, text=replies.PresentSettings()):
-    user = connector.LoadInfoAboutUser(database, message.chat.id)
-    markup = _MarkupForSettings(user.settings)
+    settings = Connector.GetSettings(message.chat.id)
+    markup = _MarkupForSettings(settings)
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call: types.CallbackQuery):
-    user = connector.LoadInfoAboutUser(database, str(call.message.chat.id))
+    user_id = str(call.message.chat.id)
+    settings = Connector.GetSettings(user_id)
     answer = None
     match call.data:
         case "addition_switch":
-            user.settings.addition = not user.settings.addition
+            settings.addition = not settings.addition
         case "subtraction_switch":
-            user.settings.subtraction = not user.settings.subtraction
+            settings.subtraction = not settings.subtraction
         case "multiplication_switch":
-            user.settings.multiplication = not user.settings.multiplication
+            settings.multiplication = not settings.multiplication
         case "division_switch":
-            user.settings.division = not user.settings.division
+            settings.division = not settings.division
         case "lessen_max_sum":
             try:
-                user.settings.max_sum -= 10
+                settings.max_sum -= 10
             except LessThanZeroException:
                 answer = "Value can't be zero or less"
         case "highten_max_sum":
             try:
-                user.settings.max_sum += 10
+                settings.max_sum += 10
             except ValueTooBigException:
                 answer = "Value reached it's max limit"
         case "lessen_max_factor":
             try:
-                user.settings.max_factor -= 10
+                settings.max_factor -= 10
             except LessThanZeroException:
                 answer = "Value can't be zero or less"
         case "highten_max_factor":
             try:
-                user.settings.max_factor += 10
+                settings.max_factor += 10
             except ValueTooBigException:
                 answer = "Value reached it's max limit"
         case _:
@@ -96,9 +106,9 @@ def handle_query(call: types.CallbackQuery):
     
     bot.answer_callback_query(call.id, answer)
 
-    connector.UpdateInfoAboutUser(database, user)
+    Connector.Save(user_id, settings)
 
-    markup = _MarkupForSettings(user.settings)
+    markup = _MarkupForSettings(settings)
     bot.edit_message_reply_markup(call.message.chat.id, call.message.id, reply_markup=markup)
 
 @bot.message_handler(commands=['website'])
@@ -114,30 +124,35 @@ def give_help(message):
 
 @bot.message_handler(content_types=['text'])
 def get_user_text(message):
-    user = connector.LoadInfoAboutUser(database, message.chat.id)
 
-    if message.text != user.task.answer:
-        user.stats.incorrect += 1
-        reply = replies.PresentSameProblemAfterFailure(user.task)
+    task = Connector.GetTask(message.chat.id)
+    settings = Connector.GetSettings(message.chat.id)
+    stats = Connector.GetStats(message.chat.id)
+
+    if message.text != task.answer:
+        stats.incorrect += 1
+        reply = replies.PresentSameProblemAfterFailure(task)
         bot.send_message(message.chat.id, reply)
         return
     
     # if text from user is a correct answer
-    user.stats.correct += 1
-    settings = user.settings
-    user.task = Task(None, None)
-    try:
-        user.task = trainnums.GenerateNewProblem(settings)
-        reply = replies.PresentProblemAfterSuccess(user.task)
-        reply = replies.PresentProblemAfterSuccess(user.task)
-        bot.send_message(message.chat.id, reply)
-    except UnableToGenerateProblemException:
+    stats.correct += 1
+    task = trainnums.GenerateNewProblem(settings)
+    if task.problem == None:
         reply = replies.InformAboutSuccess()
         bot.send_message(message.chat.id, reply)
         reply = replies.AskToTurnOnAnOperation()
         show_settings(message, text=reply)
-    finally:
-        connector.UpdateInfoAboutUser(database, user)
+    else:
+        reply = replies.PresentProblemAfterSuccess(task)
+        bot.send_message(message.chat.id, reply)
+    Connector.Save(message.chat.id, task)
+    Connector.Save(message.chat.id, settings)
+    Connector.Save(message.chat.id, stats)
+
+def InformUnableToGenerate(message):
+    reply = replies.AskToTurnOnAnOperation()
+    show_settings(message, text=reply)
 
 def _MarkupForSettings(settings: Settings) -> types.InlineKeyboardMarkup: 
     row1 = [types.InlineKeyboardButton(f"Addition: {settings.addition}", callback_data="addition_switch"),
