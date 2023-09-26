@@ -1,7 +1,10 @@
+.gitignore
+.venv
+/__pycache__
 /model.mwb
 /model.mwb.bak
 /Pipfile
 /Pipfile.lock
-/__pycache__
+/.vscode
+/trainnums.db
 assets.yml
-.gitignore

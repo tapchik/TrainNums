@@ -1,1 +1,4 @@
-TelegramBotToken: PlaceYourTokenHere
+TelegramBotToken: YourTokenGoesHere
+RollbackScript: RollbackDatabase.sql
+DatabaseMaster: trainnums.db
+DatabaseTesting: testing.db
