@@ -1,7 +1,6 @@
 import unittest
 import custom_exceptions
 import trainnums
-import User
 import connector
 import sqlite3
 import utils

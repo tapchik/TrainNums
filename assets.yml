@@ -1,4 +1,4 @@
-TelegramBotToken: 463906818:AAFhoxH-YcEk21FMnse0xUVkeVv5sQndUSQ
+TelegramBotToken: YourTokenGoesHere
 RollbackScript: RollbackDatabase.sql
 DatabaseMaster: trainnums.db
 DatabaseTesting: testing.db

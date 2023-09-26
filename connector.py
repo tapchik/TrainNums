@@ -41,7 +41,7 @@ class Connector:
             self._InitiateNewUser(user_id)
         query = f"select * from settings where user_id=\'{user_id}\'"
         row = self._ExecuteSelectQuery(query)[0]
-        settings = Settings(bool(row[1]), bool(row[2]), bool(row[3]), bool(row[4]), bool(row[5]), bool(row[6]))
+        settings = Settings(bool(row[1]), bool(row[2]), bool(row[3]), bool(row[4]), int(row[5]), int(row[6]))
         return settings
     
     def GetStats(self, user_id: str) -> Stats:

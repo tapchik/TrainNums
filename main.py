@@ -134,10 +134,11 @@ def get_user_text(message):
         reply = replies.PresentSameProblemAfterFailure(task)
         bot.send_message(message.chat.id, reply)
         return
+    else: # message.text == task.answer
+        stats.correct += 1
+        task = trainnums.GenerateNewProblem(settings)
     
     # if text from user is a correct answer
-    stats.correct += 1
-    task = trainnums.GenerateNewProblem(settings)
     if task.problem == None:
         reply = replies.InformAboutSuccess()
         bot.send_message(message.chat.id, reply)
