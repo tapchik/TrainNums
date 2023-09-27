@@ -2,11 +2,11 @@ import telebot
 from telebot import types
 import sqlite3
 import utils
-from models import Task, Settings
+from models import Task, Settings, User, Stats
 import connector
 from connector import Connector
 import replies
-import trainnums
+import generate
 from custom_exceptions import *
 
 # init
@@ -15,7 +15,7 @@ bot = telebot.TeleBot(assets['TelegramBotToken'])
 database = sqlite3.connect(assets['DatabaseMaster'], check_same_thread=False)
 del(assets)
 
-Connector = Connector(database)
+connector = Connector(database)
 
 @bot.inline_handler(lambda query: query.query == 'стих')
 def query_text(inline_query):
@@ -28,9 +28,9 @@ def query_text(inline_query):
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    task = Connector.GetTask(message.chat.id)
+    task = connector.GetTask(message.chat.id)
     if task.problem == None: 
-        task = Connector.GenerateNextTask(message.chat.id)
+        task = connector.GenerateNextTask(message.chat.id)
     if task.problem == None:
         InformUnableToGenerate(message)
         return
@@ -39,38 +39,38 @@ def handle_start(message):
 
 @bot.message_handler(commands=['skip'])
 def skip(message):
-    task = Connector.GetTask(message.chat.id)
-    settings = Connector.GetSettings(message.chat.id)
-    stats = Connector.GetStats(message.chat.id)
+    task = connector.GetTask(message.chat.id)
+    settings = connector.GetSettings(message.chat.id)
+    stats = connector.GetStats(message.chat.id)
     stats.skipped += 1
-    try: 
-        task = trainnums.GenerateNewProblem(settings)
+    if connector.AbleToGenerateNewProblem(message.chat.id): 
+        task = generate.newProblem(settings)
         reply = replies.PresentProblemAfterSkip(task)
-    except UnableToGenerateProblemException:
+    else:
         reply = replies.AskToTurnOnAnOperation()
         show_settings(message, text=reply)
         return
-    Connector.Save(message.chat.id, task)
-    Connector.Save(message.chat.id, settings)
-    Connector.Save(message.chat.id, stats)
     bot.send_message(message.chat.id, reply)
+    connector.Save(message.chat.id, task)
+    connector.Save(message.chat.id, settings)
+    connector.Save(message.chat.id, stats)
 
 @bot.message_handler(commands=['stats'])
 def show_stats(message):
-    stats = Connector.GetStats(message.chat.id)
+    stats = connector.GetStats(message.chat.id)
     reply = replies.PresentStats(stats)
     bot.send_message(message.chat.id, reply)
 
 @bot.message_handler(commands=['settings'])
 def show_settings(message, text=replies.PresentSettings()):
-    settings = Connector.GetSettings(message.chat.id)
+    settings = connector.GetSettings(message.chat.id)
     markup = _MarkupForSettings(settings)
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call: types.CallbackQuery):
     user_id = str(call.message.chat.id)
-    settings = Connector.GetSettings(user_id)
+    settings = connector.GetSettings(user_id)
     answer = None
     match call.data:
         case "addition_switch":
@@ -106,50 +106,40 @@ def handle_query(call: types.CallbackQuery):
     
     bot.answer_callback_query(call.id, answer)
 
-    Connector.Save(user_id, settings)
+    connector.Save(user_id, settings)
 
     markup = _MarkupForSettings(settings)
     bot.edit_message_reply_markup(call.message.chat.id, call.message.id, reply_markup=markup)
 
-@bot.message_handler(commands=['website'])
-def website(message):
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Посетить сайт", url='https://google.com'))
-    bot.send_message(message.chat.id, "Перейдите на сайт", reply_markup=markup)
-
-@bot.message_handler(commands=['help'])
-def give_help(message):
-    #TODO: write helping message
-    bot.send_message(message.chat.id, "Сейчас помогу")
-
 @bot.message_handler(content_types=['text'])
 def get_user_text(message):
 
-    task = Connector.GetTask(message.chat.id)
-    settings = Connector.GetSettings(message.chat.id)
-    stats = Connector.GetStats(message.chat.id)
+    task = connector.GetTask(message.chat.id)
+    settings = connector.GetSettings(message.chat.id)
+    stats = connector.GetStats(message.chat.id)
 
-    if message.text != task.answer:
-        stats.incorrect += 1
-        reply = replies.PresentSameProblemAfterFailure(task)
-        bot.send_message(message.chat.id, reply)
-        return
-    else: # message.text == task.answer
+    success = False
+    if message.text == task.answer:
         stats.correct += 1
-        task = trainnums.GenerateNewProblem(settings)
+        success = True
+    else: # message.text != task.answer
+        stats.incorrect += 1
+        success = False
     
-    # if text from user is a correct answer
-    if task.problem == None:
+    if success==False:
+        reply = replies.PresentSameProblemAfterFailure(task)
+    elif success==True and connector.AbleToGenerateNewProblem(message.chat.id):
+        task = generate.newProblem(settings)
+        reply = replies.PresentProblemAfterSuccess(task)
+    elif success==True and connector.AbleToGenerateNewProblem(message.chat.id)==False: 
         reply = replies.InformAboutSuccess()
-        bot.send_message(message.chat.id, reply)
         reply = replies.AskToTurnOnAnOperation()
         show_settings(message, text=reply)
-    else:
-        reply = replies.PresentProblemAfterSuccess(task)
-        bot.send_message(message.chat.id, reply)
-    Connector.Save(message.chat.id, task)
-    Connector.Save(message.chat.id, settings)
-    Connector.Save(message.chat.id, stats)
+
+    bot.send_message(message.chat.id, reply)
+    connector.Save(message.chat.id, task)
+    connector.Save(message.chat.id, settings)
+    connector.Save(message.chat.id, stats)
 
 def InformUnableToGenerate(message):
     reply = replies.AskToTurnOnAnOperation()

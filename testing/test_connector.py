@@ -1,13 +1,16 @@
 import unittest
 import custom_exceptions
-import trainnums
+import generate
 import connector
+from connector import Connector
 import sqlite3
 import utils
 
 class test_connector(unittest.TestCase):
 
     database: sqlite3.Connection
+    connector: Connector
+    user_id: str
 
     def setUp(self) -> None:
         """
@@ -18,6 +21,9 @@ class test_connector(unittest.TestCase):
         rollback_script_file: str = assets['RollbackScript']
 
         self.database = sqlite3.connect(database_file, check_same_thread=False)
+        self.connector = Connector(self.database)
+        self.user_id = '112233'
+
         with open(rollback_script_file, 'r') as sql_file:
             sql_script = sql_file.read()
         cursor = self.database.cursor()

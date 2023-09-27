@@ -1,6 +1,6 @@
 import sqlite3
 from models import User, Task, Settings, Stats
-import trainnums
+import generate
 from custom_exceptions import *
 
 def UpdateInfoAboutUser(database: sqlite3.Connection, user: User) -> None:
@@ -75,7 +75,7 @@ class Connector:
     
     def GenerateNextTask(self, user_id: str) -> Task:
         settings = self.GetSettings(user_id)
-        task = trainnums.GenerateNewProblem(settings)
+        task = generate.newProblem(settings)
         self.Save(user_id, task)
         return task
 

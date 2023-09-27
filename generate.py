@@ -2,8 +2,8 @@ from random import choice, randint
 from models import Task, Settings
 import custom_exceptions
 
-def GenerateNewProblem(settings: Settings) -> Task:
-    operation = ChooseOperation(settings)
+def newProblem(settings: Settings) -> Task:
+    operation = _ChooseOperation(settings)
     match operation:
         case '+':
             answer = randint(1, settings.max_sum)
@@ -28,7 +28,7 @@ def GenerateNewProblem(settings: Settings) -> Task:
     task = Task(problem, str(answer))
     return task
 
-def ChooseOperation(settings: Settings) -> str | None:
+def _ChooseOperation(settings: Settings) -> str | None:
     choices = []
     if settings.addition == True: 
         choices += ['+']
@@ -38,8 +38,7 @@ def ChooseOperation(settings: Settings) -> str | None:
         choices += ['*']
     if settings.division == True:
         choices += ['/']
-    if len(choices) == 0:
-        operation = None
-    else:
+    if len(choices) > 0:
         operation = choice(choices)
-    return operation
+        return operation
+    raise custom_exceptions.UnableToGenerateProblemException
